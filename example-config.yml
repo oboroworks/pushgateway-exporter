@@ -1,0 +1,10 @@
+pushgateway_url: "http://pushgateway:9091"
+scrape_interval_seconds: 3
+
+services:
+  - name: service1
+    freshness_threshold_seconds: 5
+  - name: service2
+    freshness_threshold_seconds: 5
+  - name: service3
+    freshness_threshold_seconds: 5

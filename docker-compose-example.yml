@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  pushgateway-exporter:
+    image: localhost:5000/pushgateway_exporter:latest
+    container_name: pushgateway-exporter
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./config.yml:/app/config.yml
+    networks:
+      - signalswarm
+
+networks:
+  signalswarm:
+    external: true
