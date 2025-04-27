@@ -1,6 +1,6 @@
 # Pushgateway Exporter
 
-An **exporter** that allows you to monitor **heartbeat** and **status metrics** by scraping data from the **Pushgateway**. 
+An **exporter** that allows you to monitor **heartbeat** and **status metrics** by scraping data from **[Pushgateway](https://github.com/prometheus/pushgateway)**. 
 This project mimics the behavior of the **Blackbox Exporter**, but with the ability to perform custom probes for each monitored service, 
 including managing **freshness** (expiry threshold for services).
 
@@ -8,6 +8,11 @@ including managing **freshness** (expiry threshold for services).
 
 The service exposes a `/probe` endpoint for each service target. The monitoring behavior is similar to **Blackbox Exporter**, allowing
 to have consistent configuration for monitoring both HTTP `/ping` endpoints and recurrent loops.
+
+
+### DockerHub
+
+The latest release is also available on [DockerHub](https://hub.docker.com/r/oboroworks/pushgateway-exporter/tags).
 
 ### Configuration
 
@@ -152,4 +157,9 @@ curl -X POST -H "Content-Type: text/plain" \
 
 ```
 
+## License
 
+This project is licensed under the BSD 3-Clause License.  
+See the [LICENSE](LICENSE.txt) file for more details.
+
+Made with love by Oboro Works.
