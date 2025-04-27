@@ -33,7 +33,7 @@ class Config:
         if not isinstance(config, dict):
             raise ConfigError("Configuration file format error: expected a dictionary.")
 
-        required_fields = ["pushgateway_url", "scrape_interval_seconds", "services"]
+        required_fields = ["pushgateway_url"]
         for field in required_fields:
             if field not in config:
                 raise ConfigError(f"Missing required configuration field: {field}")
@@ -44,7 +44,10 @@ class Config:
         return self._data["pushgateway_url"].rstrip('/')
 
     def get_scraper_interval(self) -> int:
-        return int(self._data["scrape_interval_seconds"])
+        return int(self._data.get("scrape_interval_seconds", 10))
+
+    def get_default_freshness(self) -> int:
+        return int(self._data.get("default_freshness_threshold_seconds", 10))
 
     def get_active_scrape_services(self) -> List[ServiceConfig]:
         return self._services

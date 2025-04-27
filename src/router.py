@@ -1,7 +1,18 @@
+import json
+
 from fastapi import APIRouter, HTTPException, Request, Response
 from src.globals import scraper
 
 router = APIRouter()
+
+@router.get("/")
+async def get_probed_services(request: Request) -> Response:
+    return Response(
+        content=f'{json.dumps(await scraper.get_services(), indent=2)}\n',
+        media_type="application/json",
+        status_code=200
+    )
+
 
 @router.get("/probe")
 async def probe_service(request: Request):
@@ -12,15 +23,7 @@ async def probe_service(request: Request):
     if not service_name:
         raise HTTPException(status_code=400, detail={"error": "Missing 'target' query parameter"})
 
-    try:
-        status = await scraper.get_service_status(service_name)
-    except FileNotFoundError as e:
-        probe_output = (
-            "# HELP probe_success Was the probe successful\n"
-            "# TYPE probe_success gauge\n"
-            "probe_success 0\n"
-        )
-        return Response(content=probe_output, media_type="text/plain; version=0.0.4", status_code=200)
+    status = await scraper.get_service_status(service_name)
 
     probe_output = (
         "# HELP probe_success Was the probe successful\n"

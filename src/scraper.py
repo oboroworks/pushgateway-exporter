@@ -10,6 +10,8 @@ class HeartbeatScraper:
         self.pushgateway_url = config.get_pushgateway_url()
         self.scrape_interval_seconds = config.get_scraper_interval()
         self.services: list[ServiceConfig] = config.get_active_scrape_services()
+        self.default_threshold = config.get_default_freshness()
+        self.services_thresholds = {s.name: s.freshness_threshold_seconds for s in self.services}
         self.session: Optional[aiohttp.ClientSession] = None
         self.service_status: Dict[str, int] = {service.name: 0 for service in self.services}
         self._last_fetch: Optional[float] = None
@@ -32,38 +34,37 @@ class HeartbeatScraper:
     def process_metrics(self, metrics: str):
         now = time.time()
         lines = metrics.splitlines()
-        for service in self.services:
-            service_name = service.name
-            freshness_threshold = service.freshness_threshold_seconds
-            pattern = re.compile(
-                rf'^loop_heartbeat_timestamp_seconds\{{[^}}]*instance="{re.escape(service_name)}"[^}}]*\}} ([0-9\.e\+\-]+)$'
-            )
-            found = False
-            for line in lines:
-                match = pattern.match(line)
-                if match:
-                    timestamp = int(float(match.group(1)))
+        for line in lines:
+            if line.startswith("loop_heartbeat_timestamp_seconds"):
+                string_match = re.match(
+                    r'loop_heartbeat_timestamp_seconds\{[^}]*instance="([^"]+)"[^}]*\} ([0-9\.e\+\-]+)',
+                    line
+                )
+                if string_match:
+                    instance = string_match.group(1)
+                    timestamp = float(string_match.group(2))
                     age = now - timestamp
+                    freshness_threshold = self.services_thresholds.get(instance, self.default_threshold)
+
                     if age < freshness_threshold:
-                        self.service_status[service_name] = 1
+                        self.service_status[instance] = 1  # Service is fresh
                     else:
-                        self.service_status[service_name] = 0
-                    found = True
-                    break
-            if not found:
-                self.service_status[service_name] = 0
+                        self.service_status[instance] = 0  # Service is expired
+        self._last_fetch = now
 
     async def get_service_status(self, service_name: str) -> int:
-        if service_name not in {service.name for service in self.services}:
-            raise FileNotFoundError(f"Service '{service_name}' not configured as active")
-
         now = time.time()
         if self._last_fetch and (now - self._last_fetch) < self.scrape_interval_seconds:
             return self.service_status.get(service_name, 0)
 
         metrics = await self.fetch_metrics()
-
         self.process_metrics(metrics)
-        self._last_fetch = now
 
         return self.service_status.get(service_name, 0)
+
+    async def get_services(self):
+        now = time.time()
+        if not self._last_fetch or (now - self._last_fetch > self.scrape_interval_seconds):
+            metrics = await self.fetch_metrics()
+            self.process_metrics(metrics)
+        return self.service_status

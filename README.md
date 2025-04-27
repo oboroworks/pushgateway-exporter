@@ -42,13 +42,24 @@ Example of `config.yml` for pushgateway-exporter
 ```yaml
 pushgateway_url: "http://pushgateway:9091"
 scrape_interval_seconds: 3
+default_freshness_threshold_seconds: 10
 
 services:
   - name: service1
     freshness_threshold_seconds: 5
   - name: service2
-    freshness_threshold_seconds: 5
+    freshness_threshold_seconds: 30
 ```
+
+### Parameters recap:
+- `pushgateway_url`: **mandatory**, the pushgateway container URL
+- `scrape_interval_seconds`: *optional*, how often reparse the pushgateway metrics
+- `default_freshness_threshold_seconds`: *optional*, ideally lower than the heartbeat interval. after how much time a service probe would have been flagged with `status: 0`
+
+- `services` section is *optional*
+    - `name`: the service label
+    - `freshness_threshold_seconds`: override the default_freshness_threshold_seconds for the given service 
+
 
 Example of `prometheus.yml` job:
 

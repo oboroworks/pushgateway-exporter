@@ -1,2 +1,4 @@
 build.sh
 .idea*
+docker-compose.yml
+config.yml
