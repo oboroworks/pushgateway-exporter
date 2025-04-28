@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import yaml
-from typing import List, Dict
+from typing import List, Dict, Optional
 from pydantic import BaseModel, ValidationError
 
 class ConfigError(Exception):
@@ -13,7 +13,8 @@ class ConfigError(Exception):
 
 class ServiceConfig(BaseModel):
     name: str
-    freshness_threshold_seconds: int
+    freshness_threshold_seconds: Optional[int] = None
+    replica: Optional[int] = None
 
 
 def _parse_services(services: List[Dict]) -> List[ServiceConfig]:

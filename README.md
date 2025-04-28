@@ -54,6 +54,7 @@ services:
     freshness_threshold_seconds: 5
   - name: service2
     freshness_threshold_seconds: 30
+    replica: 4
 ```
 
 ### Parameters recap:
@@ -63,8 +64,9 @@ services:
 
 - `services` section is *optional*
     - `name`: the service label
-    - `freshness_threshold_seconds`: override the default_freshness_threshold_seconds for the given service 
-
+    - `freshness_threshold_seconds` (optional): override the default_freshness_threshold_seconds for the given service
+    - `replica` (optional): to configure how many instances are expected of the service we are receiving polls from (>= replicated services)
+  
 
 Example of `prometheus.yml` job:
 
@@ -121,8 +123,13 @@ import time
 import logging
 from typing import Optional
 
-def bake_push_heartbeat(pushgateway_url: str, service_name: str, logger: Optional[logging.Logger] = None):
-    pushgateway_url = f"{pushgateway_url.rstrip('/')}/metrics/job/heartbeat/instance/{service_name}"
+def bake_push_heartbeat(
+        pushgateway_url: str,
+        service_name: str,
+        logger: Optional[logging.Logger] = None,
+        instance: str = None
+):
+    uri = instance or service_name
 
     async def push_heartbeat():
         """Push an async heartbeat to a Prometheus Pushgateway."""
@@ -135,7 +142,11 @@ def bake_push_heartbeat(pushgateway_url: str, service_name: str, logger: Optiona
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(pushgateway_url, data=payload, headers=headers) as resp:
+                async with session.post(
+                        f"{pushgateway_url.rstrip('/')}/metrics/job/heartbeat/instance/{uri}",
+                        data=payload,
+                        headers=headers
+                ) as resp:
                     content = await resp.text(encoding='utf-8')
                     if resp.status not in (200, 202):
                         if logger:
@@ -146,6 +157,7 @@ def bake_push_heartbeat(pushgateway_url: str, service_name: str, logger: Optiona
 
     return push_heartbeat
 
+
 ```
 
 curl test call:
@@ -153,7 +165,7 @@ curl test call:
 ```bash
 curl -X POST -H "Content-Type: text/plain" \
   --data "loop_heartbeat_timestamp_seconds{service=\"service1\"} $(date +%s)" \
-  http://pushgateway-url:9116/metrics/job/heartbeat/instance/service1
+  http://pushgateway-url:9116/metrics/job/heartbeat/instance/service1-1
 
 ```
 

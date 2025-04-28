@@ -8,13 +8,14 @@ import json
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from src.globals import scraper
+from src.utils import json_default_serializer
 
 router = APIRouter()
 
 @router.get("/")
-async def get_probed_services(request: Request) -> Response:
+async def get_system_info(request: Request) -> Response:
     return Response(
-        content=f'{json.dumps(await scraper.get_services(), indent=2)}\n',
+        content=f'{json.dumps(await scraper.get_configuration(), indent=2, default=json_default_serializer)}\n',
         media_type="application/json",
         status_code=200
     )
